@@ -1,11 +1,16 @@
 package dev.shreyaspatil.appfundemo.agent.ui.screen
 
+import android.content.Context
+import android.location.Location
+import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.shreyaspatil.appfunctions.notyagent.LlmAgent
 import dev.shreyaspatil.appfundemo.agent.NotyAgentExecutor
-import dev.shreyaspatil.appfundemo.agent.NotyNote
-import dev.shreyaspatil.appfundemo.agent.NotyRequest
 import kotlinx.coroutines.launch
 
 data class ChatMessage(
@@ -14,23 +19,36 @@ data class ChatMessage(
 )
 
 class AgentChatViewModel(
-    private val executor: NotyAgentExecutor
+    private val executor: NotyAgentExecutor,
+    applicationContext: Context
 ) : ViewModel() {
 
     // Holds the chat history
     private val _messages = mutableStateListOf<ChatMessage>()
+    private val _llmAgent = mutableStateOf<LlmAgent?>(null)
     val messages: List<ChatMessage> = _messages
 
+    var location by mutableStateOf<Location?>(null)
+        private set
+
+    fun onLocationReceived(loc: Location) {
+        location = loc
+    }
+
     init {
+        viewModelScope.launch {
+            val appFunctions = executor.getAvailableAppFunctions()
+            _llmAgent.value = LlmAgent("AIzaSyAQQa0k8RwLAG1NikWs0vxvtixo_pnPlsY", appFunctions, applicationContext)
+            _messages.add(ChatMessage("Available AppFunctions: \n${appFunctions.values.joinToString("\n") { it.id }}", false))
+        }
+
         _messages.add(
             ChatMessage(
-                "Hi! I am your Noty Agent. Type 'show me my notes' to test the AppFunctions.",
+                "Hi, I'm Gemini, ready to execute AppFunctions",
                 false
             )
         )
     }
-
-    private var lastlyAddedNote: NotyNote? = null
 
     fun onSendMessage(messageText: String) {
         if (messageText.isBlank()) return
@@ -41,76 +59,28 @@ class AgentChatViewModel(
         }
     }
 
-    private suspend fun processMessage(lowerCaseText: String) {
-        when {
-            lowerCaseText == "show me my notes" -> {
-                // Call the AppFunction
-                try {
-                    // Compile-time safety!
-                    val notes: List<NotyNote> = executor.execute(NotyRequest.ListNotes)
-
-                    val message =
-                        "These are your notes from NotyKT:\n" + notes.joinToString("\n-----------\n") { "-${it.title}: ${it.content}" }
-                    _messages.add(ChatMessage(message, isUser = false))
-                } catch (e: Exception) {
-                    _messages.add(ChatMessage("Error: ${e.message}", isUser = false))
-                }
-            }
-
-            lowerCaseText.startsWith("add a note about info of appfunctions") -> {
-                // Call the AppFunction
-                try {
-                    // Compile-time safety!
-                    val note = executor.execute<NotyNote>(
-                        NotyRequest.CreateNote(
-                            title = "Android AppFunctions",
-                            content = """
-                                    AppFunctions allow your Android app to share specific pieces of functionality that the system and various AI agents and assistants can discover and invoke. By defining these functions, you enable your app to provide services, data, and actions to the Android OS, allowing users to complete tasks through AI agents and system-level interactions.
-                                    
-                                    AppFunctions serve as the mobile equivalent of tools within the Model Context Protocol (MCP). While MCP traditionally standardizes how agents connect to server-side tools, AppFunctions provide the same mechanism for Android apps. This enables you to expose your app's capabilities as orchestratable "tools" that authorized apps (callers) can discover and execute to fulfill user intents. Callers must have the EXECUTE_APP_FUNCTIONS permission to discover and execute AppFunctions, and can include agents, apps, and AI assistants like Gemini.
-                                    
-                                    AppFunctions work with devices running Android 16 or higher.
-                                """.trimIndent()
-                        )
-                    )
-                    lastlyAddedNote = note
-                    _messages.add(ChatMessage("Added!", isUser = false))
-                } catch (e: Exception) {
-                    _messages.add(ChatMessage("Error: ${e.message}", isUser = false))
-                }
-            }
-
-            lowerCaseText.startsWith("make it short") -> {
-                if (lastlyAddedNote != null) {
-                    try {
-                        // Compile-time safety!
-                        val note = executor.execute<NotyNote>(
-                            NotyRequest.EditNote(
-                                noteId = lastlyAddedNote!!.id,
-                                title = lastlyAddedNote!!.title,
-                                content = lastlyAddedNote!!.content
-                                    .split("\n")
-                                    .dropLast(1)
-                                    .joinToString("\n")
-                            )
-                        )
-                        lastlyAddedNote = note
-                        _messages.add(ChatMessage("Done", isUser = false))
-                    } catch (e: Exception) {
-                        _messages.add(ChatMessage("Error: ${e.message}", isUser = false))
+    private fun processMessage(lowerCaseText: String) {
+        val agent = _llmAgent.value ?: return
+        viewModelScope.launch {
+            // TODO: Loading state
+            try {
+                val result = agent.send(
+                    userMessage = lowerCaseText,
+                    onStep = { step ->
+                        // Stream intermediate steps to UI as they happen
+                        if (step.functionId != null) {
+                            _messages.add(ChatMessage("⚙️ Calling ${step.functionId}…\n${step.thought}", isUser = false))
+                        }
+                    },
+                    executeFn = { functionId, params ->
+                        executor.executeAppFunction(functionId, params)
                     }
-                } else {
-                    _messages.add(ChatMessage("Which note?", isUser = false))
-                }
-            }
-
-            else -> {
-                _messages.add(
-                    ChatMessage(
-                        "I'm a simple demo agent. I only understand 'show me my notes' right now.",
-                        isUser = false
-                    )
                 )
+
+                _messages.add(ChatMessage(result.finalAnswer, isUser = false))
+            } catch (e: Exception) {
+                Log.e("LlmAgent", e.toString())
+                _messages.add(ChatMessage("Error: ${e.message}", isUser = false))
             }
         }
     }

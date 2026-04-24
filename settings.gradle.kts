@@ -24,4 +24,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "AppFunctions-Demo-Agent"
 include(":app")
- 

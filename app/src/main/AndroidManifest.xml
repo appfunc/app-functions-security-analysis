@@ -3,9 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+    <uses-permission android:name="android.permission.DISCOVER_APP_FUNCTIONS" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <queries>
         <package android:name="dev.shreyaspatil.noty.composeapp" />
+        <package android:name="dev.filipfan.appfunctionspilot.tool" />
     </queries>
 
 
