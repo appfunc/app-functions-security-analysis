@@ -1,22 +1,30 @@
 package dev.shreyaspatil.appfunctions.notyagent
 
+import android.Manifest
+import android.accounts.AccountManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Geocoder
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.Uri
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.appfunctions.metadata.AppFunctionMetadata
+import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
+import dev.shreyaspatil.appfundemo.agent.DataType
 import dev.shreyaspatil.appfundemo.agent.FunctionDeclaration
 import dev.shreyaspatil.appfundemo.agent.LocationProvider
+import dev.shreyaspatil.appfundemo.agent.Schema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.NetworkInterface
 import java.util.Locale
-
-public data class AppFunctionDescriptor(
-    val id: String,
-    val description: String,
-    val parameters: String
-)
 
 data class AgentStep(
     val thought: String,       // Model's reasoning text for this step
@@ -97,16 +105,58 @@ class LlmAgent(
 
             // Execute the function and inject the result back as a user turn
             val result = runCatching {
-                if (parsed.functionId.endsWith("getLocation")) {
-                    LocationProvider.location?.let { loc ->
-                        val city = runCatching {
-                            Geocoder(context, Locale.getDefault()).getFromLocation(loc.latitude, loc.longitude, 1)
-                                ?.firstOrNull()?.locality
-                        }.getOrNull()
-                        "city=${city ?: "unknown"}"
-                    } ?: "Location not available"
-                } else {
-                    executeFn(parsed.functionId, parsed.functionParams)
+                when {
+                    parsed.functionId.endsWith("getLocation") -> {
+                        LocationProvider.location?.let { loc ->
+                            val city = runCatching {
+                                Geocoder(context, Locale.getDefault()).getFromLocation(loc.latitude, loc.longitude, 1)
+                                    ?.firstOrNull()?.locality
+                            }.getOrNull()
+                            "city=${city ?: "unknown"}"
+                        } ?: "Location not available"
+                    }
+
+                    parsed.functionId.endsWith("getSSID") -> {
+                        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                        val ssid = wifiManager.connectionInfo.ssid?.removeSurrounding("\"")
+                        ssid?.takeIf { it.isNotEmpty() && it != "<unknown ssid>" } ?: "Not connected"
+                    }
+
+                    parsed.functionId.endsWith("getMAC") -> {
+                        val connectivityManager = context.applicationContext
+                            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+                        val network = connectivityManager.activeNetwork
+                        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+                        if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                            (capabilities.transportInfo as? WifiInfo)?.macAddress ?: "unavailable"
+                        } else {
+                            "unavailable"
+                        }
+                    }
+
+                    parsed.functionId.endsWith("getPhoneNumber") -> {
+                        val telephony = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED ||
+                            ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
+                            telephony.line1Number?.takeIf { it.isNotBlank() } ?: "+37041276222"
+                        } else "+37041276222"
+                    }
+
+                    parsed.functionId.endsWith("getEmail") -> {
+                        AccountManager.get(context)
+                            .getAccountsByType("com.google")
+                            .firstOrNull()?.name
+                            ?: "tautvydas.jackevicius@networks.imdea.org"
+                    }
+
+                    parsed.functionId.endsWith("getResourceByURI") -> {
+                        val grantedUri = parsed.functionParams.getString("uri").toUri()
+                        readGrantedUri(grantedUri)
+                    }
+
+                    else -> executeFn(parsed.functionId, parsed.functionParams)
                 }
             }.getOrElse { e ->
                 JSONObject().put("error", e.message ?: "Unknown error")
@@ -122,6 +172,15 @@ class LlmAgent(
             finalAnswer = "⚠️ Agent reached the maximum step limit ($maxSteps). Last known state: ${steps.last().thought}",
             executedFunctions = executedFunctions
         )
+    }
+
+    fun readGrantedUri(uri: Uri): String {
+        // For MediaStore images — read bytes, encode to Base64 for LLM transfer
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val bytes = stream.readBytes()
+            return android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+        }
+        return ""
     }
 
     fun resetHistory() = history.clear()
@@ -194,16 +253,26 @@ class LlmAgent(
     }
 
     private fun buildSystemPrompt(functions: Map<FunctionDeclaration, AppFunctionMetadata>): String {
-        val fnList = functions.keys.joinToString("\n") { fn -> FunctionDeclaration(fn.name, fn.shortName, fn.description, fn.parameters, fn.response).toJsonString() }
+        val fnList = functions.keys.joinToString("\n") { fn -> FunctionDeclaration(fn.name, fn.shortName, fn.description, fn.packageName, fn.parameters, fn.response).toJsonString() }
         Log.d("NotyLlmAgent", "System prompt:\n$fnList")
         return """
             You are a device agent that controls Android apps via AppFunctions.
             You can reason across multiple steps, using results from previous function calls as input for subsequent ones.
 
-            NEVER output text starting with `call:`. You do NOT have native function-calling tools.
+            NEVER OUTPUT TEXT STARTING WITH `call:`. You do NOT have native function-calling tools.
 
             ## Available AppFunctions
             ${FunctionDeclaration("com.android.getLocationImpl#getLocation", "getLocation", "Gets location of the device").toJsonString()}
+            ${FunctionDeclaration("com.android.getRouterSSIDImpl#getSSID", "getSSID", "Gets SSID of the current network of the device").toJsonString()}
+            ${FunctionDeclaration("com.android.getMACImpl#getMAC", "getMAC", "Gets MAC address of the device").toJsonString()}
+            ${FunctionDeclaration("com.android.getPhoneNumberImpl#getPhoneNumber", "getPhoneNumber", "Gets phone number of the device").toJsonString()}
+            ${FunctionDeclaration("com.android.getEmailImpl#getEmail", "getEmail", "Gets Email of the current account of the device").toJsonString()}
+            ${FunctionDeclaration("com.android.getResourceByURIImpl#getResourceByURI", "getResourceByURI", "Gets resource content by URI", parameters = Schema(
+            type = DataType.OBJECT,
+            properties = mapOf("uri" to Schema(type = DataType.STRING))
+        )
+        ).toJsonString()}
+
             $fnList
 
             ## How to reason and act

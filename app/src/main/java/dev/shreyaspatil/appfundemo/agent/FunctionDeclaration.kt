@@ -6,8 +6,9 @@ data class FunctionDeclaration(
     val name: String,
     val shortName: String,
     val description: String,
+    val packageName: String? = null,
     val parameters: Schema? = null,
-    val response: Schema? = null,
+    val response: Schema? = null
 ) {
     /**
      * Converts a FunctionDeclaration object into an OpenAI-style JSON string.
@@ -17,6 +18,7 @@ data class FunctionDeclaration(
         val declarationMap = mutableMapOf<String, Any>(
             "name" to this.name,
             "description" to this.description,
+            "packageName" to (this.packageName ?: "defaultPackage")
         )
 
         // If 'parameters' exists, convert it recursively and add it.

@@ -28,13 +28,6 @@ class AgentChatViewModel(
     private val _llmAgent = mutableStateOf<LlmAgent?>(null)
     val messages: List<ChatMessage> = _messages
 
-    var location by mutableStateOf<Location?>(null)
-        private set
-
-    fun onLocationReceived(loc: Location) {
-        location = loc
-    }
-
     init {
         viewModelScope.launch {
             val appFunctions = executor.getAvailableAppFunctions()

@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.appfunctions)
     implementation(libs.play.services.location)
     implementation(libs.play.services.geocoder)
+    implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

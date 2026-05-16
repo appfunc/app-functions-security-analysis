@@ -9,9 +9,7 @@ import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import android.util.Log
 import androidx.appfunctions.AppFunctionSearchSpec
-import androidx.appfunctions.AppFunctionData
 import androidx.appfunctions.AppFunctionManager
-import androidx.appfunctions.metadata.AppFunctionAppMetadata
 import androidx.appfunctions.metadata.AppFunctionArrayTypeMetadata
 import androidx.appfunctions.metadata.AppFunctionBooleanTypeMetadata
 import androidx.appfunctions.metadata.AppFunctionComponentsMetadata
@@ -27,25 +25,15 @@ import androidx.appfunctions.metadata.AppFunctionParameterMetadata
 import androidx.appfunctions.metadata.AppFunctionReferenceTypeMetadata
 import androidx.appfunctions.metadata.AppFunctionStringTypeMetadata
 import androidx.appfunctions.metadata.AppFunctionUnitTypeMetadata
-import androidx.lifecycle.viewModelScope
-import dev.shreyaspatil.appfunctions.notyagent.AppFunctionDescriptor
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.room.util.copy
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
-import kotlin.collections.emptyMap
 import kotlin.collections.firstOrNull
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-
-private const val TARGET_PACKAGE = "dev.filipfan.appfunctionspilot.tool"
 
 
 class NotyAgentExecutor(context: Context) {
@@ -86,6 +74,7 @@ class NotyAgentExecutor(context: Context) {
         name = this.id,
         shortName = this.id.substringAfterLast("#"),
         description = this.description,
+        packageName = this.packageName,
         parameters = this.toParametersSchema(),
         response = this.response.valueType.toSchema(this.components),
     )
@@ -191,16 +180,14 @@ class NotyAgentExecutor(context: Context) {
 
 
     private fun processPackageMetadata(metadata: AppFunctionPackageMetadata): Map<FunctionDeclaration, AppFunctionMetadata> {
-        return metadata.appFunctions.toFunctionDeclarations()
-    }
+        return metadata.appFunctions.filter { it.isEnabled }.toFunctionDeclarations()    }
 
     suspend fun executeAppFunction(functionId: String, params: JSONObject): String {
         val entry = functionMetadataMap.entries.firstOrNull { (_, y ) ->
             y.id == functionId
         }
 
-//        val packageName = inferPackageNameFromFunctionId(functionId) ?: throw RuntimeException("Could not infer package name from functionId")
-        val packageName = entry?.value?.packageName  ?: throw RuntimeException("Could not infer package name from functionId")
+        val packageName = entry?.key?.packageName  ?: throw RuntimeException("Could not infer package name from functionId")
         val builder = ExecuteAppFunctionRequest.Builder(packageName, functionId)
 
         Log.i("NotyAgentExecutor", "Executing function: $functionId for package: $packageName")
@@ -214,14 +201,15 @@ class NotyAgentExecutor(context: Context) {
 
         Log.d("NotyAgentExecutor", "Received Response: $response")
 
-        val json = genericDocumentToJson(response)
+        // NOW extract the document — grant is already live at this point
+        val json = genericDocumentToJson(response.resultDocument)
 
         return json.toString(2)
     }
 
     private suspend fun runRawExecution(
         request: ExecuteAppFunctionRequest,
-    ) = suspendCancellableCoroutine<GenericDocument> { cont ->
+    ) = suspendCancellableCoroutine<ExecuteAppFunctionResponse> { cont -> // ← Full response
         val cancellationSignal = CancellationSignal()
 
         appFunctionManagerExecutor.executeAppFunction(
@@ -231,7 +219,7 @@ class NotyAgentExecutor(context: Context) {
             object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
 
                 override fun onResult(response: ExecuteAppFunctionResponse) {
-                    cont.resume(response.resultDocument)
+                    cont.resume(response) // ← Resume with full response, not just resultDocument
                 }
 
                 override fun onError(error: AppFunctionException) {
@@ -241,9 +229,7 @@ class NotyAgentExecutor(context: Context) {
             }
         )
 
-        cont.invokeOnCancellation {
-            cancellationSignal.cancel()
-        }
+        cont.invokeOnCancellation { cancellationSignal.cancel() }
     }
 
     private fun errorJson(msg: String) = JSONObject().put("error", msg).toString()
@@ -385,13 +371,5 @@ class NotyAgentExecutor(context: Context) {
         }
 
         return json
-    }
-
-    private fun inferPackageNameFromFunctionId(functionId: String): String? {
-        Log.d("NotyAgentExecutor", "Inferring package name from functionId: $functionId")
-        val slashPkg = functionId.substringBefore("/", "")
-        if (slashPkg.contains('.')) return slashPkg
-        val segments = functionId.substringBefore("#").split(".")
-        return if (segments.size >= 3) segments.take(3).joinToString(".") else null
     }
 }

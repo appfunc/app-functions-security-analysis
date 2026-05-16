@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
     <uses-permission android:name="android.permission.DISCOVER_APP_FUNCTIONS" />
 
@@ -11,9 +15,14 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+
     <queries>
-        <package android:name="dev.shreyaspatil.noty.composeapp" />
         <package android:name="dev.filipfan.appfunctionspilot.tool" />
+        <package android:name="dev.filipfan.appfunctionspilot.tool.better" />
     </queries>
 
 
