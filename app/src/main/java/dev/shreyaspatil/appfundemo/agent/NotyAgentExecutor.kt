@@ -182,15 +182,10 @@ class NotyAgentExecutor(context: Context) {
     private fun processPackageMetadata(metadata: AppFunctionPackageMetadata): Map<FunctionDeclaration, AppFunctionMetadata> {
         return metadata.appFunctions.filter { it.isEnabled }.toFunctionDeclarations()    }
 
-    suspend fun executeAppFunction(functionId: String, params: JSONObject): String {
-        val entry = functionMetadataMap.entries.firstOrNull { (_, y ) ->
-            y.id == functionId
-        }
+    suspend fun executeAppFunction(targetPackage: String, functionId: String, params: JSONObject): String {
+        val builder = ExecuteAppFunctionRequest.Builder(targetPackage, functionId)
 
-        val packageName = entry?.key?.packageName  ?: throw RuntimeException("Could not infer package name from functionId")
-        val builder = ExecuteAppFunctionRequest.Builder(packageName, functionId)
-
-        Log.i("NotyAgentExecutor", "Executing function: $functionId for package: $packageName")
+        Log.i("NotyAgentExecutor", "Executing function: $functionId for package: $targetPackage")
 
         builder.setParameters(jsonObjectToGenericDocument(json = params))
 
@@ -201,7 +196,6 @@ class NotyAgentExecutor(context: Context) {
 
         Log.d("NotyAgentExecutor", "Received Response: $response")
 
-        // NOW extract the document — grant is already live at this point
         val json = genericDocumentToJson(response.resultDocument)
 
         return json.toString(2)
@@ -209,7 +203,7 @@ class NotyAgentExecutor(context: Context) {
 
     private suspend fun runRawExecution(
         request: ExecuteAppFunctionRequest,
-    ) = suspendCancellableCoroutine<ExecuteAppFunctionResponse> { cont -> // ← Full response
+    ) = suspendCancellableCoroutine<ExecuteAppFunctionResponse> { cont ->
         val cancellationSignal = CancellationSignal()
 
         appFunctionManagerExecutor.executeAppFunction(
@@ -219,7 +213,7 @@ class NotyAgentExecutor(context: Context) {
             object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
 
                 override fun onResult(response: ExecuteAppFunctionResponse) {
-                    cont.resume(response) // ← Resume with full response, not just resultDocument
+                    cont.resume(response)
                 }
 
                 override fun onError(error: AppFunctionException) {

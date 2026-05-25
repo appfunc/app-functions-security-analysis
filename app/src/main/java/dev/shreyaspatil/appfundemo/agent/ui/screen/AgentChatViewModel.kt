@@ -65,8 +65,8 @@ class AgentChatViewModel(
                             _messages.add(ChatMessage("⚙️ Calling ${step.functionId}…\n${step.thought}", isUser = false))
                         }
                     },
-                    executeFn = { functionId, params ->
-                        executor.executeAppFunction(functionId, params)
+                    executeFn = { targetPackage, functionId, params ->
+                        executor.executeAppFunction(targetPackage, functionId, params)
                     }
                 )
 

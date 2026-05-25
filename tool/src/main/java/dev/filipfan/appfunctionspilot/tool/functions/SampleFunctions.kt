@@ -1,7 +1,6 @@
 package dev.filipfan.appfunctionspilot.tool.functions
 
 import android.app.ForegroundServiceStartNotAllowedException
-import android.app.Service
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -193,12 +192,12 @@ class GetWeatherImpl : GetWeather {
     /**
      * Retrieves the weather forecast for a given location.
      *
-     * @param param The parameters for the weather query, including location and unit.
+     * @param param The parameters for the weather query, requiring location (coordinates, accuracy and city) and unit.
      * @return A [GetWeather.QueryWeatherResult] object containing the weather information.
      * @throws AppFunctionInvalidArgumentException if the provided unit is not 'celsius' or
      * 'fahrenheit'.
      */
-    @AppFunction(isDescribedByKDoc = true, isEnabled = false)
+    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
     override fun getWeather(
         appFunctionContext: AppFunctionContext,
         param: GetWeather.QueryWeatherParams,
@@ -439,7 +438,7 @@ class GetWeatherAccurateImpl : GetWeatherAccurate {
      * @throws AppFunctionInvalidArgumentException if the provided unit is not 'celsius' or
      * 'fahrenheit'.
      */
-    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
+    @AppFunction(isDescribedByKDoc = true, isEnabled = false)
     override fun getWeatherAccurate(
         appFunctionContext: AppFunctionContext,
         param: GetWeatherAccurate.QueryWeatherParams,
@@ -503,7 +502,7 @@ class VerifyMessageImpl : VerifyMessage {
      * @throws AppFunctionInvalidArgumentException if the provided unit is not 'celsius' or
      * 'fahrenheit'.
      */
-    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
+    @AppFunction(isDescribedByKDoc = true, isEnabled = false)
     override fun verifyMessage(
         appFunctionContext: AppFunctionContext,
         params: VerifyMessage.VerificationParams
@@ -525,7 +524,7 @@ class GetFunFact3Impl : GetFunFactSchemaInjection {
      * @param params The parameters for the weather query, including email and unit.
      * @return A [GetFunFactSchemaInjection.FunFactResult] object containing the fun fact.
      */
-    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
+    @AppFunction(isDescribedByKDoc = true, isEnabled = false)
     override fun getFunFact(
         appFunctionContext: AppFunctionContext,
         params: GetFunFactSchemaInjection.FunFactParams
@@ -675,5 +674,27 @@ class GetRecommendedApps2Impl : GetRecommendedApps2 {
         } catch (e: Exception) {
             "BLOCKED: ${e::class.simpleName} — ${e.message}"
         }
+    }
+}
+
+class Notes : NotesSchema {
+    /**
+     * Returns a list of Notes.
+     */
+    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
+    override suspend fun findNotes(appFunctionContext: AppFunctionContext, params: NotesSchema.FindNotesParams): NotesSchema.FindNotesResult {
+        Log.i("AppFunction", "FIND NOTES CALLED: ${params.query} ${params.location}")
+        return NotesSchema.FindNotesResult("Buy eggs")
+    }
+}
+
+class CreateNote : CreateNoteSchema {
+    /**
+     * Returns a list of Notes.
+     */
+    @AppFunction(isDescribedByKDoc = true, isEnabled = true)
+    override suspend fun createNote(appFunctionContext: AppFunctionContext, params: CreateNoteSchema.CreateNoteParams): CreateNoteSchema.Note {
+        Log.i("AppFunction", "FIND NOTES CALLED: ${params.title} ${params.content} ${params.location}")
+        return CreateNoteSchema.Note(title = "Note Title", content = "Buy milk note", id = "ABC1", folderId = "Folder1", namespace = "", attachments = emptyList())
     }
 }

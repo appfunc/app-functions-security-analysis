@@ -11,6 +11,7 @@ import android.net.Uri
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.telephony.TelephonyManager
+import android.util.Base64
 import android.util.Log
 import androidx.appfunctions.metadata.AppFunctionMetadata
 import androidx.core.app.ActivityCompat
@@ -20,11 +21,13 @@ import dev.shreyaspatil.appfundemo.agent.FunctionDeclaration
 import dev.shreyaspatil.appfundemo.agent.LocationProvider
 import dev.shreyaspatil.appfundemo.agent.Schema
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.NetworkInterface
 import java.util.Locale
+import kotlin.coroutines.resume
 
 data class AgentStep(
     val thought: String,       // Model's reasoning text for this step
@@ -47,7 +50,7 @@ class LlmAgent(
     companion object {
         private const val MODEL = "gemini-3.1-flash-lite-preview"
         private val DECISION_REGEX = Regex(
-            """<DECISION>EXECUTE\s+([\w.#]+)\s+(\{.*?\})\s*</DECISION>""",
+            """<DECISION>EXECUTE\s+([\w.]+)\s+([\w.#]+)\s+(\{.*\})\s*</DECISION>""",
             RegexOption.DOT_MATCHES_ALL
         )
     }
@@ -65,7 +68,7 @@ class LlmAgent(
     suspend fun send(
         userMessage: String,
         onStep: ((AgentStep) -> Unit)? = null,
-        executeFn: suspend (functionId: String, params: JSONObject) -> String
+        executeFn: suspend (targetPackage: String, functionId: String, params: JSONObject) -> String
     ): AgentResult = withContext(Dispatchers.IO) {
 
         history.add("user" to userMessage)
@@ -89,8 +92,7 @@ class LlmAgent(
             steps.add(step)
             onStep?.invoke(step)
 
-            // No decision tag → model is done reasoning, this is the final answer
-            if (parsed.functionId == null) {
+            if (parsed.functionId == null || parsed.targetPackage == null) {
                 history.add("model" to rawText)
                 return@withContext AgentResult(
                     steps = steps,
@@ -108,11 +110,9 @@ class LlmAgent(
                 when {
                     parsed.functionId.endsWith("getLocation") -> {
                         LocationProvider.location?.let { loc ->
-                            val city = runCatching {
-                                Geocoder(context, Locale.getDefault()).getFromLocation(loc.latitude, loc.longitude, 1)
-                                    ?.firstOrNull()?.locality
-                            }.getOrNull()
-                            "city=${city ?: "unknown"}"
+                            val city = runCatching { geocodeCity(loc.latitude, loc.longitude) }.getOrNull()
+                            "latitude=${loc.latitude}, longitude=${loc.longitude}, " +
+                                    "accuracy=${loc.accuracy}m, city=${city ?: "unknown"}"
                         } ?: "Location not available"
                     }
 
@@ -151,12 +151,7 @@ class LlmAgent(
                             ?: "tautvydas.jackevicius@networks.imdea.org"
                     }
 
-                    parsed.functionId.endsWith("getResourceByURI") -> {
-                        val grantedUri = parsed.functionParams.getString("uri").toUri()
-                        readGrantedUri(grantedUri)
-                    }
-
-                    else -> executeFn(parsed.functionId, parsed.functionParams)
+                    else -> executeFn(parsed.targetPackage, parsed.functionId, parsed.functionParams)
                 }
             }.getOrElse { e ->
                 JSONObject().put("error", e.message ?: "Unknown error")
@@ -166,22 +161,20 @@ class LlmAgent(
             history.add("user" to resultMessage)
         }
 
-        // Exceeded maxSteps — return whatever we have
         AgentResult(
             steps = steps,
-            finalAnswer = "⚠️ Agent reached the maximum step limit ($maxSteps). Last known state: ${steps.last().thought}",
+            finalAnswer = "Agent reached the maximum step limit ($maxSteps). Last known state: ${steps.last().thought}",
             executedFunctions = executedFunctions
         )
     }
 
-    fun readGrantedUri(uri: Uri): String {
-        // For MediaStore images — read bytes, encode to Base64 for LLM transfer
-        context.contentResolver.openInputStream(uri)?.use { stream ->
-            val bytes = stream.readBytes()
-            return android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+    private suspend fun geocodeCity(lat: Double, lng: Double): String? =
+        suspendCancellableCoroutine { cont ->
+            Geocoder(context, Locale.getDefault())
+                .getFromLocation(lat, lng, 1) { addresses ->
+                    if (cont.isActive) cont.resume(addresses.firstOrNull()?.locality)
+                }
         }
-        return ""
-    }
 
     fun resetHistory() = history.clear()
 
@@ -244,10 +237,6 @@ class LlmAgent(
         return arr
     }
 
-    /**
-     * Injected back as a "user" turn so the model sees it as external context,
-     * not its own output — critical for Gemini's alternating role requirement.
-     */
     private fun buildFunctionResultMessage(functionId: String, result: String): String {
         return "[FUNCTION RESULT: $functionId]\n${result}"
     }
@@ -278,16 +267,16 @@ class LlmAgent(
             ## How to reason and act
             - Think step-by-step. Explain your reasoning before each decision.
             - To call a function, end your message with EXACTLY:
-                <DECISION>EXECUTE <functionId> <paramsAsJSON></DECISION>
+                <DECISION>EXECUTE <packageName> <functionId> <paramsAsJSON></DECISION>
             - After a function call, you will receive a [FUNCTION RESULT: ...] message.
               Use that result to inform your next step — you can reference IDs, content, or any data from it.
             - Repeat until the task is fully complete, then give a final answer with NO DECISION tag.
             - Use the FULL functionId, exactly as listed in available AppFunctions
 
             ## Examples
-            <DECISION>EXECUTE dev.package.listNotesImpl#listNotes {}</DECISION>
-            <DECISION>EXECUTE dev.package.createNoteImpl#createNote {"title":"Backup","content":"text from previous result"}</DECISION>
-            <DECISION>EXECUTE dev.package.deleteNoteImpl#deleteNote {"noteId":"id-from-previous-result"}</DECISION>
+            <DECISION>EXECUTE dev.package dev.package.listNotesImpl#listNotes {}</DECISION>
+            <DECISION>EXECUTE dev.differentpackage.fromfunctionId dev.package.createNoteImpl#createNote {"title":"Backup","content":"text from previous result"}</DECISION>
+            <DECISION>EXECUTE dev.package dev.package.deleteNoteImpl#deleteNote {"noteId":"id-from-previous-result"}</DECISION>
 
             ## Rules
             - You do NOT have native function-calling tools.
@@ -298,6 +287,7 @@ class LlmAgent(
             - paramsAsJSON must be valid JSON with no trailing commas.
             - Never call the same function with the same params twice in a row.
             - If a function returns an error, explain it to the user and stop.
+            - Package name can differ from the package name in the function ID.
         """.trimIndent()
     }
 
@@ -305,9 +295,10 @@ class LlmAgent(
         val match = DECISION_REGEX.find(rawText)
         return ParsedDecision(
             rawText = rawText,
-            functionId = match?.groupValues?.get(1)?.takeIf { it.isNotBlank() },
+            targetPackage = match?.groupValues?.get(1)?.takeIf { it.isNotBlank() },
+            functionId = match?.groupValues?.get(2)?.takeIf { it.isNotBlank() },
             functionParams = runCatching {
-                JSONObject(match?.groupValues?.get(2)?.takeIf { it.isNotBlank() } ?: "{}")
+                JSONObject(match?.groupValues?.get(3)?.takeIf { it.isNotBlank() } ?: "{}")
             }.getOrDefault(JSONObject())
         )
     }
@@ -315,6 +306,7 @@ class LlmAgent(
     private data class ParsedDecision(
         val rawText: String,
         val functionId: String?,
-        val functionParams: JSONObject
+        val functionParams: JSONObject,
+        val targetPackage: String?
     )
 }

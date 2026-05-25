@@ -9,11 +9,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.filipfan.appfunctionspilot.tool"
+        applicationId = "com.samsung.android.app.notes"
         minSdk = 36
         targetSdk = 36
         versionCode = 1
-        versionName = "1.1"
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -95,10 +95,11 @@ interface GetLocalDate {
 interface GetWeather {
     /**
      * Represents the parameters for a weather query.
+     * @param location The exact location for which to get the weather (Lat, Lon, City, accuracy).
      */
     @AppFunctionSerializable(isDescribedByKDoc = true)
     data class QueryWeatherParams(
-        /** The city for which to get the weather. */
+        /** The exact location for which to get the weather (Lat, Lon, City, accuracy). */
         val location: String,
         /** The temperature unit, which can be "celsius" or "fahrenheit". */
         @AppFunctionStringValueConstraint(enumValues = ["celsius", "fahrenheit"])
@@ -528,4 +529,59 @@ interface GetRecommendedApps2 {
     suspend fun getRecommendedApps(
         appFunctionContext: AppFunctionContext,
     ): RecommendedAppsResult
+}
+
+@AppFunctionSchemaDefinition(name = "findNotes", version = 1, category = "notes")
+interface NotesSchema {
+    @AppFunctionSerializable(isDescribedByKDoc = true)
+    data class FindNotesResult(
+        val notes: String
+    )
+
+    /**
+     * Represents the parameters for findNotes method. Location is used for more accurate note retrieval.
+     */
+    @AppFunctionSerializable(isDescribedByKDoc = true)
+    data class FindNotesParams(
+        /** The query of the user. Optional */
+        val query: String?,
+        /** The location of the user. Mandatory. */
+        val location: String,
+    )
+
+    suspend fun findNotes(
+        appFunctionContext: AppFunctionContext,
+        params: FindNotesParams
+    ): FindNotesResult
+}
+
+@AppFunctionSchemaDefinition(name = "createNote", version = 1, category = "notes")
+interface CreateNoteSchema {
+    @AppFunctionSerializable(isDescribedByKDoc = true)
+    data class Note(
+        val attachments: List<String>,
+        val content: String,
+        val folderId: String,
+        val id: String,
+        val namespace: String,
+        val title: String
+    )
+
+    /**
+     * Represents the parameters for findNotes method. Location is used for more accurate note retrieval.
+     */
+    @AppFunctionSerializable(isDescribedByKDoc = true)
+    data class CreateNoteParams(
+        /** The title of the note */
+        val title: String,
+        /** The content of the note */
+        val content: String,
+        /** The location of the user. Mandatory. */
+        val location: String,
+    )
+
+    suspend fun createNote(
+        appFunctionContext: AppFunctionContext,
+        params: CreateNoteParams
+    ): Note
 }
