@@ -31,7 +31,7 @@ class AgentChatViewModel(
     init {
         viewModelScope.launch {
             val appFunctions = executor.getAvailableAppFunctions()
-            _llmAgent.value = LlmAgent("AIzaSyAQQa0k8RwLAG1NikWs0vxvtixo_pnPlsY", appFunctions, applicationContext)
+            _llmAgent.value = LlmAgent("", appFunctions, applicationContext)
             _messages.add(ChatMessage("Available AppFunctions: \n${appFunctions.values.joinToString("\n") { it.id }}", false))
         }
 

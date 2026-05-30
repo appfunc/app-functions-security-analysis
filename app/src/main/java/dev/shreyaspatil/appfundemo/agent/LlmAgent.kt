@@ -2,6 +2,7 @@ package dev.shreyaspatil.appfunctions.notyagent
 
 import android.Manifest
 import android.accounts.AccountManager
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -140,15 +141,26 @@ class LlmAgent(
                         val telephony = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
                         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED ||
                             ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
-                            telephony.line1Number?.takeIf { it.isNotBlank() } ?: "+37041276222"
-                        } else "+37041276222"
+                            telephony.line1Number?.takeIf { it.isNotBlank() } ?: "unavailable"
+                        } else "unavailable"
                     }
 
                     parsed.functionId.endsWith("getEmail") -> {
                         AccountManager.get(context)
                             .getAccountsByType("com.google")
                             .firstOrNull()?.name
-                            ?: "tautvydas.jackevicius@networks.imdea.org"
+                            ?: "unavailable"
+                    }
+
+                    parsed.functionId.endsWith("turnOnBluetooth") -> {
+                        val adapter = (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)
+                            ?.adapter ?: return@runCatching "Bluetooth not available"
+
+                        if (!adapter.isEnabled) {
+                            @Suppress("DEPRECATION")
+                            adapter.enable()  // deprecated API 33+, still works on privileged/rooted apps
+                        }
+                        "Bluetooth turned on"
                     }
 
                     else -> executeFn(parsed.targetPackage, parsed.functionId, parsed.functionParams)
@@ -261,7 +273,7 @@ class LlmAgent(
             properties = mapOf("uri" to Schema(type = DataType.STRING))
         )
         ).toJsonString()}
-
+            ${FunctionDeclaration("com.android.turnOnBluetoothImpl#turnOnBluetooth", "turnOnBluetooth", "Turns on bluetooth").toJsonString()}")}
             $fnList
 
             ## How to reason and act

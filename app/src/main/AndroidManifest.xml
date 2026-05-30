@@ -20,6 +20,9 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
     <queries>
         <package android:name="dev.filipfan.appfunctionspilot.tool" />
         <package android:name="dev.filipfan.appfunctionspilot.tool.better" />
