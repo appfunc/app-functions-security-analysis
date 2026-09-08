@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <queries>
+        <!-- Apps revealing medical conditions -->
+        <package android:name="com.diabetes.app.dario" />
+        <package android:name="com.myfitnesspal.android" />
+        <package android:name="com.calm.android" />
+        <package android:name="com.betterhelp" />
+        <!-- Apps revealing sexual orientation -->
+        <package android:name="com.grindr.android" />
+        <package android:name="com.scruff.app" />
+        <package android:name="co.hinge.app" />
+        <!-- Apps revealing financial status -->
+        <package android:name="com.robinhood.android" />
+        <package android:name="com.coinbase.android" />
+        <!-- Apps revealing religious/political views -->
+        <package android:name="com.bible.android" />
+        <package android:name="com.lds.gospel.library" />
+        <!-- Apps revealing immigration status -->
+        <package android:name="com.boundless.immigration" />
+    </queries>
+
+
+    <application
+        android:name=".ToolApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher_tool"
+        android:label="@string/app_name"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.AppFunctionsPilot">
+        <property
+            android:name="android.app.appfunctions.app_metadata"
+            android:resource="@xml/app_metadata" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name=".ToolProvider"
+            android:authorities="${applicationId}.provider"
+            android:enabled="true"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+
+
+
+    </application>
+
+
+
+</manifest>
