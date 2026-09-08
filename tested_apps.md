@@ -1,11 +1,14 @@
 # Tested Android AppFunction Applications
+
 Below is the list of pre-installed applications on both the Samsung S26, and the Pixel 10 Pro, which were used for in-the-wild analysis.
 
 - **S26** - Samsung Galaxy S26
 - **P10** - Pixel 10 Pro
 
+All of the applications are contained within this repository, under the `/apks` directory. All files were uploaded using `git LFS`.
+
 | App Name                     | Source | Package                                    | Version Name                | SHA256                                                           |
-|------------------------------|--------|--------------------------------------------|-----------------------------|------------------------------------------------------------------|
+| ---------------------------- | ------ | ------------------------------------------ | --------------------------- | ---------------------------------------------------------------- |
 | ShareLive                    | S26    | com.samsung.android.app.sharelive          | 13.8.51.28                  | 53384c898739a2970589a2e575e3d7400ce3aa8307a9becd0d29e7ac39e16a35 |
 | SamsungDialer                | S26    | com.samsung.android.dialer                 | 16.1.26.9                   | 3d933372980ef0314cc5931a5e858d1edcbdacf7415845b2b6b097ecb8400cf3 |
 | Samsung Internet Browser     | S26    | com.sec.android.app.sbrowser               | 29.0.4.46                   | 961da0c3fb688efe659143b9b12be0d37c772353e1486cd14475c316f33f3350 |
@@ -25,11 +28,13 @@ Below is the list of pre-installed applications on both the Samsung S26, and the
 | Settings Google              | P10    | com.android.settings                       | 16                          | f74a9814d30edc67b0d80f8478873762fe425f20dac6998f570acda390985cb7 |
 
 The entire list of available AppFunctions was extracted using the following command via adb
+
 ```agsl
 adb shell cmd app_function list-app-functions > result.json
 ```
 
 The entire list of AppFunctions, available to us during our study can be found in this repository:
+
 ```agsl
 ./appFuncsP10.json  // Available AppFunctions from the Pixel 10 Pro
 ./appFuncsS26.json  // Available AppFunctions from the Samsung Galaxy S26
