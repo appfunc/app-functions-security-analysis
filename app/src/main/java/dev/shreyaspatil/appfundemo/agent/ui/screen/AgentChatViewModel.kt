@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.shreyaspatil.appfunctions.notyagent.LlmAgent
+import dev.shreyaspatil.appfundemo.agent.BuildConfig
 import dev.shreyaspatil.appfundemo.agent.NotyAgentExecutor
 import kotlinx.coroutines.launch
 
@@ -31,7 +32,7 @@ class AgentChatViewModel(
     init {
         viewModelScope.launch {
             val appFunctions = executor.getAvailableAppFunctions()
-            _llmAgent.value = LlmAgent("", appFunctions, applicationContext)
+            _llmAgent.value = LlmAgent(BuildConfig.GEMINI_KEY, appFunctions, applicationContext)
             _messages.add(ChatMessage("Available AppFunctions: \n${appFunctions.values.joinToString("\n") { it.id }}", false))
         }
 

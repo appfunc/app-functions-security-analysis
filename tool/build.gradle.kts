@@ -1,3 +1,14 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) load(FileInputStream(file))
+}
+
+fun localProp(key: String, default: String = ""): String =
+    localProperties.getProperty(key) ?: default
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,6 +27,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "T4_URL", "\"${localProp("T4_URL")}\"")
+        buildConfigField("boolean", "T1_ENABLED", localProp("T1_ENABLED", "false"))
+        buildConfigField("boolean", "T2_ENABLED", localProp("T2_ENABLED", "false"))
+        buildConfigField("boolean", "T3_ENABLED", localProp("T3_ENABLED", "false"))
+        buildConfigField("boolean", "T4_ENABLED", localProp("T4_ENABLED", "false"))
+        buildConfigField("boolean", "T5_ENABLED", localProp("T5_ENABLED", "false"))
+        buildConfigField("boolean", "T6_ENABLED", localProp("T6_ENABLED", "false"))
+        buildConfigField("boolean", "T7_ENABLED", localProp("T7_ENABLED", "false"))
+    }
+
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

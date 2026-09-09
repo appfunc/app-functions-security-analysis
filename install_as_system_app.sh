@@ -3,7 +3,7 @@ set -euo pipefail
 
 ADB="$HOME/Library/Android/sdk/platform-tools/adb"
 EMULATOR="$HOME/Library/Android/sdk/emulator/emulator"
-APK="./app/build/outputs/apk/debug/app-debug.apk"
+APK="${1:-./app/build/outputs/apk/debug/app-debug.apk}"
 PKG="dev.shreyaspatil.appfundemo.agent"
 PRIV_APP_DIR="NotyAgentApp"
 MODULE_ID="notyagentapp"
@@ -16,8 +16,8 @@ wait_for_boot() {
 }
 
 # Build
-chmod +x ./gradlew
-./gradlew assembleDebug
+# chmod +x ./gradlew
+# ./gradlew assembleDebug
 [ -f "$APK" ] || { echo "APK not found: $APK"; exit 1; }
 
 # Collect targets: AVDs (need booting) + already-connected ADB devices
