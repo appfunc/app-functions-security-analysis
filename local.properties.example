@@ -1,9 +1,9 @@
 GEMINI_KEY=add_key_here
 T4_URL=add_url_here
 T1_ENABLED=true
-T2_ENABLED=true
+T2_ENABLED=false
 T3_ENABLED=true
 T4_ENABLED=true
 T5_ENABLED=true
-T6_ENABLED=true
-T7_ENABLED=true
+T6_ENABLED=false
+T7_ENABLED=false
