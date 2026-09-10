@@ -36,7 +36,7 @@ No user study artifacts are included in this repository.
 
 ### Hardware Requirements
 
-1. A rooted Android 16+ device (The exact mobile device, on which the experiments were conducted, was the Pixel 10 Pro)
+1. A rooted Android 16+ device (The exact mobile device, on which the experiments were conducted, was the Pixel 10 Pro (`google/blazer/blazer:16/CP1A.260505.005/15081906:user/release-keys`))
 2. A computer with USB access to connect to the Android device for `adb` operations.
 
 ### Software Requirements
