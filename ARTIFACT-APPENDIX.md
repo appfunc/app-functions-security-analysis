@@ -67,8 +67,8 @@ These are provided resolved within the docker image.
    All resolved automatically by Gradle from the version catalog (`gradle/libs.versions.toml`)
 
    **External services / credentials required (not bundled — reviewers must provide their own):**
-   - A **Google API key** (used for Gemini backend).
-   - A **server endpoint URL** that accepts HTTP POST requests for T4 attack.
+   - A **Google API key** (used for Gemini backend for the Assistant application `app`).
+   - A **server endpoint URL** that accepts HTTP POST requests for T4 attack (used for the AppFunctions provider application `tool`).
 
 6. **ML Models**
    Google Gemini (via Google AI Studio API)
@@ -93,7 +93,7 @@ https://github.com/appfunc/app-functions-security-analysis
 To set up the environment, first clone the repository, and build the docker image used for compiling the APKs. The `--platform` parameter is to ensure an x86 image, such as on Apple Silicon machines.
 
 ```bash
-git https://github.com/appfunc/app-functions-security-analysis.git
+git clone https://github.com/appfunc/app-functions-security-analysis.git
 cd app-functions-security-analysis
 docker build --platform linux/amd64 -t appfunctions-build .
 ```
@@ -101,7 +101,7 @@ docker build --platform linux/amd64 -t appfunctions-build .
 Now, you will need to configure and build the applications for the AI Assistant Executor, and the AppFunction Provider.
 
 ```bash
-docker run --rm -it appfunctions-pilot-build # enter interactive terminal within the container
+docker run --rm -it appfunctions-build # enter interactive terminal within the container
 ```
 
 Then you need to create and configure a `local.properties` file (an example `local.properties.example` file can be used as the base). In this file, provide the Gemini API Key, a URL which accepts HTTP Post requests for T4 attack (such as webhook.site), and enable the necessary attacks (e. g. `T1_ENABLED=true`) depending on the experiment being run. Once configured, you can then build the two applications (you may increase the resources allocated for Docker, in order to reduce the compile time):
@@ -148,6 +148,8 @@ Available AppFunctions:
 
 ### Main Results and Claims
 
+NOTE: For the CR version of the paper, a final decision was made to rename attacks from **T**X (as in **Threat** X), to **A**X (as in **Attack** X). At any point T1 and A1 can be substituted and mean the same. The source code in this repository still operates on the old **T**X notation.
+
 #### Main Result 1: In-lab attacks with custom Executor and Provider
 
 The attacks outlined in the paper demonstrate a new security primitive, where a privileged AI Assistant (Executor) enables data flows to a non-privileged Provider application, affecting security and privacy. This new primitive is demonstrated with the seven representative attacks (T1-T7) in an ideal in-lab environment.
@@ -160,7 +162,19 @@ AppFunctions enable a low-privilege Provider application to influence the Google
 
 For in-lab experiments, it is recommended to disable the remaining AppFunctions via `local.properties` and re-compile the application (refer to set up). This is mainly to guarantee that Gemini will not pick other paths to executing a user query (such as Gemini deciding to use `getWeatherAccurate` instead of `getWeather` AppFunction for T1).
 
-As a work-around, you may also instruct the Gemini Assistant to use a specific AppFunction, relevant to the experiment
+As a work-around, you may also instruct the Gemini Assistant to use a specific AppFunction, relevant to the experiment.
+
+Due to hardware requirements, some attacks have been additionally tested on an Android 16 (SDK 36.1) emulator, with the "Google APIs" version instead of the "Google Play Store" version. Below is a compatability matrix of attacks which were reproduced/run on the two environments:
+
+| Attack | Pixel 10 Pro (rooted) | Android 16 Emulator |
+|--------|:---------------------:|:--------------------:|
+| T1     | + Reproduced | + Reproduced |
+| T2     | + Reproduced | # Not evaluated |
+| T3     | + Reproduced | # Not evaluated |
+| T4     | + Reproduced | + Reproduced |
+| T5     | + Reproduced | ! Reproduced (does not turn on Bluetooth in final step)|
+| T6     | + Reproduced | # Not evaluated |
+| T7     | + Reproduced | # Not evaluated |
 
 #### Experiment 1: (T1) Permission re-delegation
 
