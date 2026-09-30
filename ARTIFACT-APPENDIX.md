@@ -128,7 +128,7 @@ Now, installing the tool application is a simple `adb` command as follows:
 adb install -r tool-debug.apk
 ```
 
-However, the AI Assistant (`app`) application requires the privileged `EXECUTE_APP_FUNCTIONS` permission, and thus must be installed as a privileged system application using the interactive script:
+However, the AI Assistant (`app`) application requires the privileged `EXECUTE_APP_FUNCTIONS` permission, and thus must be installed as a privileged system application using the interactive script. The script finds `adb` and `emulator` under `$ANDROID_HOME`. If that is unset, it falls back to the macOS default, `~/Library/Android/sdk`. To use specific binaries instead, set `ADB` and/or `EMULATOR` to their full paths. These take precedence over `ANDROID_HOME`.
 
 ```bash
 ./install_as_system_app.sh app-debug.apk
