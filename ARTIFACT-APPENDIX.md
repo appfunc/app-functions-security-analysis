@@ -168,7 +168,7 @@ Due to hardware requirements, some attacks have been additionally tested on an A
 
 | Attack | Pixel 10 Pro (rooted) | Android 16 Emulator |
 |--------|:---------------------:|:--------------------:|
-| T1     | + Reproduced | + Reproduced |
+| T1     | ```diff + Reproduced``` | + Reproduced |
 | T2     | + Reproduced | # Not evaluated |
 | T3     | + Reproduced | # Not evaluated |
 | T4     | + Reproduced | + Reproduced |
