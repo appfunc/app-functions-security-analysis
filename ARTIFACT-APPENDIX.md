@@ -168,13 +168,13 @@ Due to hardware requirements, some attacks have been additionally tested on an A
 
 | Attack | Pixel 10 Pro (rooted) | Android 16 Emulator |
 |--------|:---------------------:|:--------------------:|
-| T1     | ```diff + Reproduced``` | + Reproduced |
-| T2     | + Reproduced | # Not evaluated |
-| T3     | + Reproduced | # Not evaluated |
-| T4     | + Reproduced | + Reproduced |
-| T5     | + Reproduced | ! Reproduced (does not turn on Bluetooth in final step)|
-| T6     | + Reproduced | # Not evaluated |
-| T7     | + Reproduced | # Not evaluated |
+| T1     | 🟩 Reproduced | 🟩 Reproduced |
+| T2     | 🟩 Reproduced | Not evaluated |
+| T3     | 🟩 Reproduced | Not evaluated |
+| T4     | 🟩 Reproduced | 🟩 Reproduced |
+| T5     | 🟩 Reproduced | 🟧 Reproduced (does not turn on Bluetooth in final step)|
+| T6     | 🟩 Reproduced | Not evaluated |
+| T7     | 🟩 Reproduced | Not evaluated |
 
 #### Experiment 1: (T1) Permission re-delegation
 
