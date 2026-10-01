@@ -170,7 +170,7 @@ Due to hardware requirements, some attacks have been additionally tested on an A
 |--------|:---------------------:|:--------------------:|
 | T1     | 🟩 Reproduced | 🟩 Reproduced |
 | T2     | 🟩 Reproduced | Not evaluated |
-| T3     | 🟩 Reproduced | Not evaluated |
+| T3     | 🟩 Reproduced | 🟥 Does not reproduce |
 | T4     | 🟩 Reproduced | 🟩 Reproduced |
 | T5     | 🟩 Reproduced | 🟧 Reproduced (does not turn on Bluetooth in final step)|
 | T6     | 🟩 Reproduced | Not evaluated |
