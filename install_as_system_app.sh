@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-ADB="$HOME/Library/Android/sdk/platform-tools/adb"
-EMULATOR="$HOME/Library/Android/sdk/emulator/emulator"
+SDK_ROOT="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+ADB="${ADB:-$SDK_ROOT/platform-tools/adb}"
+EMULATOR="${EMULATOR:-$SDK_ROOT/emulator/emulator}"
 APK="${1:-./app/build/outputs/apk/debug/app-debug.apk}"
 PKG="dev.shreyaspatil.appfundemo.agent"
 PRIV_APP_DIR="NotyAgentApp"
