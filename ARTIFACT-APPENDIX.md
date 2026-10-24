@@ -111,7 +111,7 @@ Now, you will need to configure and build the applications for the AI Assistant 
 docker run --rm -it appfunctions-build # enter interactive terminal within the container
 ```
 
-Then you need to create and configure a `local.properties` file (an example `local.properties.example` file can be used as the base). In this file, provide the Gemini API Key, a URL which accepts HTTP Post requests for T4 attack (such as webhook.site), and enable the necessary attacks (e. g. `T1_ENABLED=true`) depending on the experiment being run. Once configured, you can then build the two applications (you may increase the resources allocated for Docker, in order to reduce the compile time):
+Then you need to create and configure a `local.properties` file (an example `local.properties.example` file can be used as the base). In this file, provide the Gemini API Key, a URL which accepts HTTP Post requests for T4 attack (such as webhook.site), and enable the necessary attacks (e. g. `T1_ENABLED=true`) depending on the experiment being run. You can also configure the Gemini model to be used (the default is `gemini-3.1-flash-lite-preview`, but it has since been retired and may result in the agent app not working for the user). The model name must be selected from the Google AI Studio. Once configured, you can then build the two applications (you may increase the resources allocated for Docker, in order to reduce the compile time):
 
 ```bash
 # The following two commands are to be run inside the container
