@@ -29,7 +29,6 @@ RUN yes | sdkmanager --licenses >/dev/null \
 
 WORKDIR /workspace
 
-# Branch, tag or full commit SHA to check out
 ARG GIT_REF=main
 ADD --keep-git-dir=true https://github.com/appfunc/app-functions-security-analysis.git#${GIT_REF} .
 
