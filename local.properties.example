@@ -1,4 +1,5 @@
 GEMINI_KEY=add_key_here
+GEMINI_MODEL=gemini-3.1-flash-lite-preview
 T4_URL=add_url_here
 T1_ENABLED=true
 T2_ENABLED=false

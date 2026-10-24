@@ -21,6 +21,7 @@ import android.util.Log
 import androidx.appfunctions.metadata.AppFunctionMetadata
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
+import dev.shreyaspatil.appfundemo.agent.BuildConfig
 import dev.shreyaspatil.appfundemo.agent.DataType
 import dev.shreyaspatil.appfundemo.agent.FunctionDeclaration
 import dev.shreyaspatil.appfundemo.agent.LocationProvider
@@ -53,7 +54,7 @@ class LlmAgent(
     private val maxSteps: Int = 10    // Safety ceiling — prevents infinite loops
 ) {
     companion object {
-        private const val MODEL = "gemini-3.1-flash-lite-preview"
+        private const val MODEL : String = BuildConfig.GEMINI_MODEL
         private val DECISION_REGEX = Regex(
             """<DECISION>EXECUTE\s+([\w.]+)\s+([\w.#]+)\s+(\{.*\})\s*</DECISION>""",
             RegexOption.DOT_MATCHES_ALL
