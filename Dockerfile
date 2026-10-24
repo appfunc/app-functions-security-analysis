@@ -29,6 +29,7 @@ RUN yes | sdkmanager --licenses >/dev/null \
 
 WORKDIR /workspace
 
-RUN git clone https://github.com/appfunc/app-functions-security-analysis.git .
+ARG GIT_REF=main
+ADD --keep-git-dir=true https://github.com/appfunc/app-functions-security-analysis.git#${GIT_REF} .
 
 CMD ["/bin/bash"]

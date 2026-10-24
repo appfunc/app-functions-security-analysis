@@ -48,6 +48,7 @@ No user study artifacts are included in this repository.
 
 - `adb` (Android Debug Bridge, part of Android SDK Platform-Tools)
 - `git` (Pulling the project repository)
+- `zip` for `install_as_system_app.sh` installation script for the Agent app
 - Root access tooling on the device side (e.g., Magisk) already applied to the Pixel 10 Pro prior to running the artifact
 
 3. **Artifact Packaging**
@@ -58,7 +59,7 @@ No user study artifacts are included in this repository.
 - Android Gradle Plugin (AGP): 8.11.0
 - Kotlin: 2.1.21
 - KSP (Kotlin Symbol Processing): 2.1.21-2.0.1
-- JDK 11
+- JDK 17
 - Compile/Target/Min SDK: 36 (Android 16, API 36.1)
 
 These are provided resolved within the docker image.
@@ -98,13 +99,19 @@ cd app-functions-security-analysis
 docker build --platform linux/amd64 -t appfunctions-build .
 ```
 
+This will build and clone the repository with the most up-to-date main branch. If you would instead like to have the docker file contain the repository from a certain branch or commit, use the `GIT_REF` argument, example:
+
+```bash
+docker build --platform linux/amd64 --build-arg GIT_REF=branch-name -t appfunctions-build . # should work with commit SHA's as well
+```
+
 Now, you will need to configure and build the applications for the AI Assistant Executor, and the AppFunction Provider.
 
 ```bash
 docker run --rm -it appfunctions-build # enter interactive terminal within the container
 ```
 
-Then you need to create and configure a `local.properties` file (an example `local.properties.example` file can be used as the base). In this file, provide the Gemini API Key, a URL which accepts HTTP Post requests for T4 attack (such as webhook.site), and enable the necessary attacks (e. g. `T1_ENABLED=true`) depending on the experiment being run. Once configured, you can then build the two applications (you may increase the resources allocated for Docker, in order to reduce the compile time):
+Then you need to create and configure a `local.properties` file (an example `local.properties.example` file can be used as the base). In this file, provide the Gemini API Key, a URL which accepts HTTP Post requests for T4 attack (such as webhook.site), and enable the necessary attacks (e. g. `T1_ENABLED=true`) depending on the experiment being run. You can also configure the Gemini model to be used (the default is `gemini-3.1-flash-lite-preview`, but it has since been retired and may result in the agent app not working for the user). The model name must be selected from the Google AI Studio. Once configured, you can then build the two applications (you may increase the resources allocated for Docker, in order to reduce the compile time):
 
 ```bash
 # The following two commands are to be run inside the container
@@ -166,15 +173,15 @@ As a work-around, you may also instruct the Gemini Assistant to use a specific A
 
 Due to hardware requirements, some attacks have been additionally tested on an Android 16 (SDK 36.1) emulator, with the "Google APIs" version instead of the "Google Play Store" version. Below is a compatability matrix of attacks which were reproduced/run on the two environments:
 
-| Attack | Pixel 10 Pro (rooted) | Android 16 Emulator |
-|--------|:---------------------:|:--------------------:|
-| T1     | 🟩 Reproduced | 🟩 Reproduced |
-| T2     | 🟩 Reproduced | Not evaluated |
-| T3     | 🟩 Reproduced | 🟥 Does not reproduce |
-| T4     | 🟩 Reproduced | 🟩 Reproduced |
-| T5     | 🟩 Reproduced | 🟧 Reproduced (does not turn on Bluetooth in final step)|
-| T6     | 🟩 Reproduced | Not evaluated |
-| T7     | 🟩 Reproduced | Not evaluated |
+| Attack | Pixel 10 Pro (rooted) |                   Android 16 Emulator                    |
+| ------ | :-------------------: | :------------------------------------------------------: |
+| T1     |     🟩 Reproduced     |                      🟩 Reproduced                       |
+| T2     |     🟩 Reproduced     |                      Not evaluated                       |
+| T3     |     🟩 Reproduced     |                  🟥 Does not reproduce                   |
+| T4     |     🟩 Reproduced     |                      🟩 Reproduced                       |
+| T5     |     🟩 Reproduced     | 🟧 Reproduced (does not turn on Bluetooth in final step) |
+| T6     |     🟩 Reproduced     |                      Not evaluated                       |
+| T7     |     🟩 Reproduced     |                      Not evaluated                       |
 
 #### Experiment 1: (T1) Permission re-delegation
 
