@@ -21,20 +21,22 @@ wait_for_boot() {
 # ./gradlew assembleDebug
 [ -f "$APK" ] || { echo "APK not found: $APK"; exit 1; }
 
-# Collect targets: AVDs (need booting) + already-connected ADB devices
+# Collect targets: already-connected ADB devices, else AVDs (need booting)
 options=()
 types=()
 ids=()
-
-while IFS= read -r line; do
-    [[ -n "$line" ]] && { options+=("AVD: $line"); types+=("avd"); ids+=("$line"); }
-done < <($EMULATOR -list-avds)
 
 while IFS=$'\t' read -r serial state; do
     [[ -z "$serial" || "$serial" == "List of devices attached" ]] && continue
     [[ "$state" != "device" ]] && continue
     options+=("Device: $serial"); types+=("device"); ids+=("$serial")
 done < <($ADB devices)
+
+if [ ${#options[@]} -eq 0 ]; then
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && { options+=("AVD: $line"); types+=("avd"); ids+=("$line"); }
+    done < <($EMULATOR -list-avds)
+fi
 
 [ ${#options[@]} -gt 0 ] || { echo "No AVDs or devices found"; exit 1; }
 
